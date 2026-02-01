@@ -1,0 +1,22 @@
+# Core
+streamlit>=1.30.0
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.11.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Scientific
+xarray>=2023.12.0
+geopandas>=0.14.0
+
+# AI/LLM (optional - for enhanced generation)
+openai>=1.0.0
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-anthropic>=0.1.0
+requests>=2.31.0
+
+# Development
+jupyter>=1.0.0
+notebook>=7.0.0
