@@ -12,10 +12,14 @@ geopandas>=0.14.0
 
 # AI/LLM (optional - for enhanced generation)
 openai>=1.0.0
+anthropic>=0.18.0
 langchain>=0.1.0
 langchain-openai>=0.0.5
 langchain-anthropic>=0.1.0
 requests>=2.31.0
+
+# Git operations (for v3.0 agentic mode)
+gitpython>=3.1.0
 
 # Development
 jupyter>=1.0.0
