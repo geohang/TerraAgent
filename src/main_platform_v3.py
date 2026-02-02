@@ -75,20 +75,163 @@ TERMINAL_CSS = """
 """
 
 
-def get_llm_client(api_key: str, model_name: str) -> Optional[Any]:
-    """Initialize an LLM client when a valid API key is provided."""
-    if not validate_api_key(api_key):
-        return None
+# Supported LLM providers - users can type any model version
+LLM_PROVIDERS = {
+    "Claude Code (CLI)": {
+        "default_model": "sonnet",
+        "placeholder": "e.g., sonnet, opus, haiku",
+        "key_prefix": "",
+        "key_hint": "Uses Claude Code CLI (must be installed)",
+        "docs_url": "https://code.claude.com/docs/en/overview",
+    },
+    "OpenAI": {
+        "default_model": "gpt-4o",
+        "placeholder": "e.g., gpt-4o, gpt-4-turbo, o1-preview",
+        "key_prefix": "sk-",
+        "key_hint": "sk-...",
+        "docs_url": "https://platform.openai.com/docs/models",
+    },
+    "Anthropic": {
+        "default_model": "claude-sonnet-4-20250514",
+        "placeholder": "e.g., claude-sonnet-4-20250514, claude-opus-4-20250514",
+        "key_prefix": "sk-ant-",
+        "key_hint": "sk-ant-...",
+        "docs_url": "https://docs.anthropic.com/en/docs/about-claude/models",
+    },
+    "Google": {
+        "default_model": "gemini-2.0-flash",
+        "placeholder": "e.g., gemini-2.0-flash, gemini-1.5-pro",
+        "key_prefix": "AI",
+        "key_hint": "AIza...",
+        "docs_url": "https://ai.google.dev/models/gemini",
+    },
+    "Mistral": {
+        "default_model": "mistral-large-latest",
+        "placeholder": "e.g., mistral-large-latest, codestral-latest",
+        "key_prefix": "",
+        "key_hint": "API key",
+        "docs_url": "https://docs.mistral.ai/getting-started/models/",
+    },
+    "OpenRouter": {
+        "default_model": "openai/gpt-4o",
+        "placeholder": "e.g., openai/gpt-4o, anthropic/claude-3.5-sonnet",
+        "key_prefix": "sk-or-",
+        "key_hint": "sk-or-...",
+        "docs_url": "https://openrouter.ai/models",
+    },
+    "Ollama (Local)": {
+        "default_model": "llama3.2",
+        "placeholder": "e.g., llama3.2, codellama, mistral, deepseek-coder",
+        "key_prefix": "",
+        "key_hint": "No key needed",
+        "docs_url": "https://ollama.com/library",
+    },
+}
+
+
+def get_llm_client(api_key: str, provider: str, model_name: str) -> Optional[Any]:
+    """Initialize an LLM client based on provider and model."""
     try:
-        if "gpt" in model_name.lower():
+        if provider == "Claude Code (CLI)":
+            # Claude Code uses CLI, return a special marker
+            return {"client": None, "model": model_name, "provider": "claude_code"}
+        
+        elif provider == "OpenAI":
             import openai
-            return openai.OpenAI(api_key=api_key)
-        if "claude" in model_name.lower():
+            return {"client": openai.OpenAI(api_key=api_key), "model": model_name, "provider": "openai"}
+
+        elif provider == "Anthropic":
             import anthropic
-            return anthropic.Anthropic(api_key=api_key)
-    except Exception:
+            return {"client": anthropic.Anthropic(api_key=api_key), "model": model_name, "provider": "anthropic"}
+
+        elif provider == "Google":
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            return {"client": genai, "model": model_name, "provider": "google"}
+
+        elif provider == "Mistral":
+            from mistralai import Mistral
+            return {"client": Mistral(api_key=api_key), "model": model_name, "provider": "mistral"}
+
+        elif provider == "OpenRouter":
+            import openai
+            client = openai.OpenAI(
+                api_key=api_key,
+                base_url="https://openrouter.ai/api/v1"
+            )
+            return {"client": client, "model": model_name, "provider": "openrouter"}
+
+        elif provider == "Ollama (Local)":
+            import openai
+            client = openai.OpenAI(
+                api_key="ollama",
+                base_url="http://localhost:11434/v1"
+            )
+            return {"client": client, "model": model_name, "provider": "ollama"}
+
+    except Exception as e:
+        st.warning(f"Failed to initialize {provider} client: {e}")
         return None
     return None
+
+
+def check_claude_code_installed() -> bool:
+    """Check if Claude Code CLI is installed and accessible."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["claude", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        return result.returncode == 0
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+
+
+def call_claude_code(prompt: str, model: str = "sonnet", working_dir: str = None) -> str:
+    """
+    Call Claude Code CLI to generate code.
+    
+    Args:
+        prompt: The prompt to send to Claude Code
+        model: Model alias (sonnet, opus, haiku)
+        working_dir: Working directory for the command
+    
+    Returns:
+        Generated code as string
+    """
+    import subprocess
+    import json
+    
+    cmd = [
+        "claude",
+        "-p",  # Print mode (non-interactive)
+        "--model", model,
+        "--output-format", "text",
+        "--dangerously-skip-permissions",  # Skip permission prompts for automation
+        prompt
+    ]
+    
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=120,  # 2 minute timeout
+            cwd=working_dir
+        )
+        
+        if result.returncode != 0:
+            raise RuntimeError(f"Claude Code error: {result.stderr}")
+        
+        return result.stdout.strip()
+        
+    except subprocess.TimeoutExpired:
+        raise RuntimeError("Claude Code timed out after 120 seconds")
+    except FileNotFoundError:
+        raise RuntimeError("Claude Code CLI not found. Install it from: https://code.claude.com/docs/en/setup")
 
 
 def format_log_message(msg: str) -> str:
@@ -265,8 +408,19 @@ def run_demo_mode(demo_path: str, instruction: str, llm_client: Optional[Any]):
         add_log("Analyzing code structure...")
         analysis = builder.analyze_code(code_str)
         add_log(f"✓ Found function: {analysis.get('name', 'unknown')}")
+        add_log(f"  Return type: {analysis.get('return_type', 'unknown')}")
+        add_log(f"  Parameters: {[p['name'] for p in analysis.get('parameters', [])]}")
         
-        add_log("Generating Streamlit UI...")
+        # Log which generation method is being used
+        if llm_client:
+            provider = llm_client.get('provider', 'unknown') if isinstance(llm_client, dict) else 'unknown'
+            model = llm_client.get('model', 'unknown') if isinstance(llm_client, dict) else 'unknown'
+            add_log(f"🤖 Using LLM: {provider} / {model}")
+            add_log("Generating Streamlit UI with AI assistance...")
+        else:
+            add_log("📋 Using rule-based generation (no API key provided)")
+            add_log("Generating Streamlit UI...")
+        
         generated = builder.generate_ui_code(code_str, instruction)
         
         st.session_state.generated_code = generated
@@ -294,52 +448,93 @@ def main():
     # === SIDEBAR ===
     with st.sidebar:
         st.header("⚙️ Configuration")
-        
+
+        # Provider selection
+        provider = st.selectbox(
+            "LLM Provider",
+            list(LLM_PROVIDERS.keys()),
+            index=0,
+            help="Select your LLM provider"
+        )
+
+        # Model input - user can type any model version
+        provider_config = LLM_PROVIDERS[provider]
+        model = st.text_input(
+            "Model Name",
+            value=provider_config["default_model"],
+            placeholder=provider_config["placeholder"],
+            help=f"Enter any {provider} model name. [View available models]({provider_config['docs_url']})"
+        )
+
+        # API key input
+        key_hint = LLM_PROVIDERS[provider]["key_hint"]
         api_key = st.text_input(
-            "LLM API Key",
+            "API Key",
             type="password",
-            placeholder="sk-... or sk-ant-...",
-            help="OpenAI or Anthropic API key for enhanced generation"
+            placeholder=key_hint,
+            help=f"Enter your {provider} API key" if provider != "Ollama (Local)" else "No key needed for local Ollama"
         )
-        
-        model = st.selectbox(
-            "Model",
-            ["gpt-4o", "claude-3.5-sonnet"],
-            index=0
-        )
-        
+
         st.caption("Without an API key, TerraAgent uses rule-based generation.")
-        
+
         st.divider()
-        
-        # Quick Start Demos
-        st.subheader("🚀 Quick Start Demos")
-        
-        demos = {
+
+        # GitHub Repository Examples (Real Repos)
+        st.subheader("🌐 GitHub Examples")
+        st.caption("Clone real repositories to generate apps")
+
+        github_demos = {
+            "🌤️ ClimateBench": {
+                "url": "https://github.com/duncanwp/ClimateBench",
+                "instruction": "Analyze the climate emulator code and create an interactive app for climate prediction visualization."
+            },
+            "🔥 FireWeatherIndex": {
+                "url": "https://github.com/steidani/FireWeatherIndex",
+                "instruction": "Create a fire weather index calculator with inputs for temperature, humidity, wind speed, and precipitation."
+            },
+            "🌊 UNSAFE Flood": {
+                "url": "https://github.com/abpoll/unsafe",
+                "instruction": "Build a flood risk assessment tool with uncertainty quantification and Monte Carlo visualization."
+            }
+        }
+
+        for label, demo in github_demos.items():
+            if st.button(label, use_container_width=True, key=f"github_{label}"):
+                st.session_state.github_url = demo["url"]
+                st.session_state.instruction = demo["instruction"]
+                st.rerun()
+
+        st.divider()
+
+        # Quick Local Demos (Built-in examples)
+        st.subheader("📁 Local Demos")
+        st.caption("Built-in examples (no download needed)")
+
+        local_demos = {
             "🌤️ Climate": {
                 "path": "src/science_climate.py",
-                "instruction": "Create a climate simulation app with year slider and emission scenario selector."
+                "instruction": "Create a climate projection app with location dropdown, target year slider (2024-2100), emission scenario selector, and display warming results on a map."
             },
             "🔥 Fire Risk": {
-                "path": "src/science_fire.py", 
-                "instruction": "Create a fire risk assessment app with temperature, humidity, wind, and rain inputs."
+                "path": "src/science_fire.py",
+                "instruction": "Create a fire risk assessment app with location dropdown, temperature, humidity, wind speed, precipitation inputs, and display FWI results on a map with risk level."
             },
             "🌊 Flood Loss": {
                 "path": "src/science_flood.py",
-                "instruction": "Create a flood loss calculator with Monte Carlo simulation visualization."
+                "instruction": "Create a flood loss calculator with location dropdown, flood depth slider, and display mean loss, confidence intervals, and location on a map."
             }
         }
-        
-        for label, demo in demos.items():
-            if st.button(label, use_container_width=True, key=f"demo_{label}"):
+
+        for label, demo in local_demos.items():
+            if st.button(label, use_container_width=True, key=f"local_{label}"):
                 st.session_state.github_url = demo["path"]
                 st.session_state.instruction = demo["instruction"]
-                llm_client = get_llm_client(api_key, model)
+                llm_client = get_llm_client(api_key, provider, model)
                 run_demo_mode(demo["path"], demo["instruction"], llm_client)
                 st.rerun()
-        
+
         st.divider()
-        
+
         # Reference Links
         st.subheader("📚 Reference Projects")
         for ref in get_reference_links():
@@ -377,8 +572,8 @@ def main():
     with col_btn1:
         if st.button("🚀 Generate App", type="primary", use_container_width=True):
             if github_url:
-                llm_client = get_llm_client(api_key, model)
-                
+                llm_client = get_llm_client(api_key, provider, model)
+
                 # Check if it's a local demo path or a GitHub URL
                 if github_url.startswith("http"):
                     run_agentic_pipeline(github_url, instruction, llm_client)

@@ -1,4 +1,15 @@
 """
+Auto-generated Streamlit UI for calculate_flood_loss
+"""
+
+import streamlit as st
+import matplotlib.pyplot as plt
+
+# Import the science function (paste the function code here or import from module)
+# from science_module import calculate_flood_loss
+
+# === PASTE YOUR SCIENCE FUNCTION HERE ===
+"""
 Flood Loss Uncertainty Assessment Module
 
 This module provides a TerraAgent wrapper for the UNSAFE framework.
@@ -605,3 +616,183 @@ if __name__ == "__main__":
     fig.savefig("flood_output.png", dpi=150, bbox_inches='tight')
     print("\nOutput saved to flood_output.png")
     plt.show()
+
+# === END SCIENCE FUNCTION ===
+
+# Page config
+st.set_page_config(page_title="Calculate Flood Loss", layout="wide")
+
+# Title and description
+st.title("Calculate Flood Loss")
+st.markdown("""Calculate flood loss with uncertainty using UNSAFE framework or simplified model.""")
+st.markdown("**User Instruction:** Create a flood loss estimation app")
+
+# Initialize session state
+if 'result' not in st.session_state:
+    st.session_state.result = None
+
+# Sidebar inputs
+st.sidebar.header("Input Parameters")
+
+location_name = st.sidebar.selectbox("Location Name", options=get_flood_locations() if "get_flood_locations" in dir() else ["Houston, TX", "Miami, FL", "New Orleans, LA", "Cedar Rapids, IA", "Sacramento, CA", "Charleston, SC", "Norfolk, VA", "Baton Rouge, LA"], help="Name of the city to analyze (e.g., 'Houston, TX').")
+flood_depth = st.sidebar.number_input("Flood Depth", value=1.0, step=0.1, help="The flood water depth in meters (0.1 to 5.0).")
+num_simulations = st.sidebar.number_input("Num Simulations", min_value=1, value=1000, step=100, help="Number of Monte Carlo iterations (default: 1000).")
+property_value = st.sidebar.number_input("Property Value", value=0, help="Override the average property value for the location.")
+foundation_type = st.sidebar.text_input("Foundation Type", value="S", help="Foundation type - 'S' (Slab), 'C' (Crawlspace),")
+num_stories = st.sidebar.slider("Num Stories", min_value=0, max_value=100, value=1, help="Number of stories (1 or 2). Affects damage function.")
+use_unsafe = st.sidebar.checkbox("Use Unsafe", value=True, help="Whether to use UNSAFE if available (default: True).")
+
+# Main area
+st.divider()
+
+# Show location preview before running (makes UI more attractive)
+preview_col1, preview_col2 = st.columns([2, 1])
+
+with preview_col1:
+    st.subheader("🌊 Flood Risk Analysis")
+    
+    # Check UNSAFE status
+    status = check_unsafe_installation()
+    if status['installed'] and status['data_ready']:
+        st.success(f"✅ UNSAFE framework active | Mode: **{status['mode']}**")
+    else:
+        st.warning(f"⚠️ Using simplified estimation | Install UNSAFE: `{status['install_command']}`")
+    
+    st.markdown(f"""
+    **Selected Location:** {location_name}  
+    **Flood Depth:** {flood_depth:.1f} meters  
+    **Property Value:** {f'${property_value:,.0f}' if property_value > 0 else 'Default for location'}
+    
+    Click **Run Model** to calculate flood loss with uncertainty quantification.
+    """)
+
+with preview_col2:
+    st.subheader("🗺️ Location Preview")
+    # Show selected location on map
+    if location_name in FLOOD_LOCATIONS:
+        loc_info = FLOOD_LOCATIONS[location_name]
+        preview_map = pd.DataFrame({
+            'lat': [loc_info['lat']],
+            'lon': [loc_info['lon']],
+        })
+        st.map(preview_map, zoom=8)
+        st.caption(f"📍 {location_name}")
+
+st.divider()
+
+# Run button
+if st.sidebar.button("Run Model", type="primary", use_container_width=True):
+    with st.spinner("Running model..."):
+        try:
+            result = calculate_flood_loss(location_name, flood_depth, num_simulations, property_value, foundation_type, num_stories, use_unsafe)
+            st.session_state.result = result
+            st.success("Model completed successfully!")
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
+
+# Display result
+if st.session_state.result is not None:
+    result = st.session_state.result
+    
+    # Create two columns for results
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("📊 Key Results")
+        
+        # Display metrics based on what's available
+        metric_col1, metric_col2, metric_col3 = st.columns(3)
+        
+        with metric_col1:
+            if 'mean_loss' in result:
+                st.metric("Mean Loss", f"${result['mean_loss']:,.0f}")
+            elif 'mean' in result:
+                st.metric("Mean", f"{result['mean']:.2f}")
+            elif 'fwi' in result:
+                st.metric("Fire Weather Index", f"{result['fwi']:.1f}")
+        
+        with metric_col2:
+            if 'damage_ratio' in result:
+                st.metric("Damage Ratio", f"{result['damage_ratio']:.1%}")
+            elif 'std_loss' in result:
+                st.metric("Std Dev", f"${result['std_loss']:,.0f}")
+            elif 'std' in result:
+                st.metric("Std Dev", f"{result['std']:.2f}")
+        
+        with metric_col3:
+            if 'ci_lower' in result and 'ci_upper' in result:
+                ci_text = f"${result['ci_lower']:,.0f} — ${result['ci_upper']:,.0f}"
+                st.metric("95% CI", ci_text)
+            elif 'using_unsafe' in result:
+                mode = "✅ UNSAFE" if result['using_unsafe'] else "📊 Simplified"
+                st.metric("Mode", mode)
+        
+        # Show confidence interval info
+        if 'ci_lower' in result and 'ci_upper' in result:
+            st.info(f"**95% Confidence Interval:** ${result.get('ci_lower', 0):,.0f} — ${result.get('ci_upper', 0):,.0f}")
+        
+        # Create histogram if losses available
+        if 'losses' in result or 'mean_loss' in result:
+            st.markdown("#### 📈 Loss Distribution")
+            fig, ax = plt.subplots(figsize=(8, 4))
+            if 'losses' in result:
+                losses = result['losses']
+            else:
+                # Simulate distribution from mean and std
+                import numpy as np
+                mean = result.get('mean_loss', 10000)
+                std = result.get('std_loss', mean * 0.3)
+                losses = np.random.normal(mean, std, 1000)
+                losses = np.maximum(losses, 0)
+            ax.hist(losses, bins=30, edgecolor='white', alpha=0.7, color='steelblue')
+            ax.axvline(result.get('mean_loss', np.mean(losses)), color='red', linestyle='--', 
+                      linewidth=2, label='Mean')
+            ax.set_xlabel('Loss ($)')
+            ax.set_ylabel('Frequency')
+            ax.legend()
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close(fig)
+    
+    with col2:
+        st.subheader("🗺️ Location")
+        
+        # Display map if coordinates available
+        if 'lat' in result and 'lon' in result:
+            import pandas as pd
+            map_data = pd.DataFrame({
+                'lat': [result['lat']],
+                'lon': [result['lon']],
+            })
+            st.map(map_data, zoom=10)
+            st.caption(f"📍 {result.get('location', 'Selected Location')}")
+    
+    # Details table
+    st.divider()
+    st.subheader("📋 Calculation Details")
+    
+    # Build details from result
+    import pandas as pd
+    details = []
+    display_keys = ['location', 'flood_depth_m', 'property_value', 'foundation_type', 
+                   'num_stories', 'num_simulations', 'using_unsafe', 'date', 'period']
+    for key in display_keys:
+        if key in result:
+            value = result[key]
+            if key == 'property_value':
+                value = f"${value:,.0f}"
+            elif key == 'flood_depth_m':
+                value = f"{value:.2f} m"
+            elif key == 'using_unsafe':
+                value = "✅ Yes" if value else "❌ No"
+            elif isinstance(value, (int, float)) and not isinstance(value, bool):
+                value = f"{value:,}" if isinstance(value, int) else f"{value:.2f}"
+            details.append({'Parameter': key.replace('_', ' ').title(), 'Value': str(value)})
+    
+    if details:
+        details_df = pd.DataFrame(details)
+        st.dataframe(details_df, hide_index=True, width="stretch")
+    
+    # Show full JSON in expander
+    with st.expander("🔍 View Full Result JSON"):
+        st.json(result)

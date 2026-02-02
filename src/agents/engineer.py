@@ -501,6 +501,180 @@ except Exception as e:
             imported_modules=[]
         )
 
+    def install_github_package(
+        self,
+        github_url: str,
+        extra_deps: Optional[List[str]] = None,
+        use_current_env: bool = True
+    ) -> Tuple[bool, str, List[str]]:
+        """
+        Install a package directly from a GitHub repository.
+        
+        This is the preferred method for integrating external scientific packages.
+        Uses pip install git+{url} syntax.
+        
+        Args:
+            github_url: GitHub repository URL (e.g., https://github.com/owner/repo).
+            extra_deps: Additional dependencies to install (e.g., ['geopandas', 'rasterio']).
+            use_current_env: If True, install in current environment (not a venv).
+            
+        Returns:
+            Tuple of (success, message, list of verified imports).
+            
+        Example:
+            >>> result = engineer.install_github_package(
+            ...     "https://github.com/abpoll/unsafe",
+            ...     extra_deps=["geopandas", "pyyaml"]
+            ... )
+            >>> print(result)
+            (True, "Package installed successfully", ["unsafe.ddfs", "unsafe.ensemble"])
+        """
+        self.log(f"Installing package from GitHub: {github_url}")
+        
+        # Determine pip executable
+        if use_current_env:
+            pip = sys.executable.replace("python", "pip")
+            if not os.path.exists(pip):
+                pip = [sys.executable, "-m", "pip"]
+            else:
+                pip = [pip]
+        else:
+            # Would need venv_path parameter
+            raise ValueError("Non-current environment installation requires venv_path")
+        
+        # Install the package from GitHub
+        install_url = f"git+{github_url}"
+        self.log(f"Running: pip install {install_url}")
+        
+        try:
+            result = subprocess.run(
+                pip + ["install", install_url],
+                capture_output=True,
+                text=True,
+                timeout=600
+            )
+            
+            if result.returncode != 0:
+                error_msg = result.stderr or result.stdout
+                self.log(f"✗ Installation failed: {error_msg[:300]}")
+                return False, error_msg, []
+                
+            self.log("✓ Package installed successfully")
+            
+        except subprocess.TimeoutExpired:
+            self.log("✗ Installation timed out")
+            return False, "Installation timed out after 10 minutes", []
+        except Exception as e:
+            self.log(f"✗ Installation error: {e}")
+            return False, str(e), []
+        
+        # Install extra dependencies
+        if extra_deps:
+            self.log(f"Installing extra dependencies: {extra_deps}")
+            for dep in extra_deps:
+                try:
+                    subprocess.run(
+                        pip + ["install", dep],
+                        capture_output=True,
+                        text=True,
+                        timeout=120
+                    )
+                except Exception as e:
+                    self.log(f"  Warning: Failed to install {dep}: {e}")
+        
+        # Extract package name from URL
+        package_name = github_url.rstrip('/').split('/')[-1]
+        
+        # Try to verify import
+        verified_imports = []
+        try:
+            # Try importing the main package
+            test_code = f"import {package_name}; print('OK')"
+            result = subprocess.run(
+                [sys.executable, "-c", test_code],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            if result.returncode == 0:
+                verified_imports.append(package_name)
+                self.log(f"✓ Verified import: {package_name}")
+        except Exception:
+            pass
+        
+        return True, "Package installed successfully", verified_imports
+    
+    def download_data_file(
+        self,
+        url: str,
+        output_path: str,
+        source_type: str = "auto"
+    ) -> Tuple[bool, str]:
+        """
+        Download a data file from a URL.
+        
+        Supports Zenodo, GitHub raw files, and direct URLs.
+        
+        Args:
+            url: URL to download from.
+            output_path: Local path to save the file.
+            source_type: Type of source ("zenodo", "github", or "auto").
+            
+        Returns:
+            Tuple of (success, message or error).
+        """
+        import urllib.request
+        from pathlib import Path
+        
+        self.log(f"Downloading data from: {url}")
+        
+        # Create output directory if needed
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            urllib.request.urlretrieve(url, output_path)
+            self.log(f"✓ Downloaded to: {output_path}")
+            return True, f"Downloaded to {output_path}"
+        except Exception as e:
+            self.log(f"✗ Download failed: {e}")
+            return False, str(e)
+    
+    def verify_package_import(
+        self,
+        package_name: str,
+        submodules: Optional[List[str]] = None
+    ) -> Dict[str, bool]:
+        """
+        Verify that a package and its submodules can be imported.
+        
+        Args:
+            package_name: Main package name.
+            submodules: List of submodule names to verify.
+            
+        Returns:
+            Dict mapping module names to import success status.
+        """
+        results = {}
+        
+        modules_to_check = [package_name]
+        if submodules:
+            modules_to_check.extend([f"{package_name}.{sub}" for sub in submodules])
+        
+        for module in modules_to_check:
+            try:
+                test_code = f"import {module}; print('OK')"
+                result = subprocess.run(
+                    [sys.executable, "-c", test_code],
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+                results[module] = (result.returncode == 0)
+            except Exception:
+                results[module] = False
+        
+        return results
+
 
 if __name__ == "__main__":
     # Test

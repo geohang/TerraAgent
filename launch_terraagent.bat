@@ -36,29 +36,55 @@ if "%CONDA_EXE%"=="" (
 :conda_found
 
 REM Derive common paths
-for %%D in ("%CONDA_EXE%") do set "CONDA_ROOT=%%~dp.."
+for %%D in ("%CONDA_EXE%") do set "CONDA_ROOT=%%~dpD.."
 set "ENV_NAME=terraagent"
-set "ENV_DIR=%USERPROFILE%\.conda\envs\%ENV_NAME%"
-set "ENV_PY=%ENV_DIR%\\python.exe"
 
-REM Create environment if missing
-if not exist "%ENV_PY%" (
-    echo [INFO] Creating conda environment '%ENV_NAME%' from environment.yml ...
-    "%CONDA_EXE%" env create -f environment.yml
-    if %ERRORLEVEL% NEQ 0 (
-        echo [ERROR] Environment creation failed.
-        pause
-        exit /b 1
+REM Check multiple possible environment locations
+set "ENV_PY="
+for %%E in (
+    "%USERPROFILE%\anaconda3\envs\%ENV_NAME%\python.exe"
+    "%USERPROFILE%\miniconda3\envs\%ENV_NAME%\python.exe"
+    "%USERPROFILE%\.conda\envs\%ENV_NAME%\python.exe"
+    "C:\ProgramData\Anaconda3\envs\%ENV_NAME%\python.exe"
+    "C:\ProgramData\miniconda3\envs\%ENV_NAME%\python.exe"
+) do (
+    if exist %%~E (
+        set "ENV_PY=%%~E"
+        goto :env_found
     )
 )
 
-REM Run Streamlit using env python (avoids activation PATH issues)
-if not exist "%ENV_PY%" (
-    echo [ERROR] Expected python not found at %ENV_PY%
+REM Environment not found, create it
+echo [INFO] Creating conda environment '%ENV_NAME%' from environment.yml ...
+"%CONDA_EXE%" env create -f environment.yml -n %ENV_NAME%
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] Environment creation failed.
     pause
     exit /b 1
 )
 
+REM Re-check for environment after creation
+for %%E in (
+    "%USERPROFILE%\anaconda3\envs\%ENV_NAME%\python.exe"
+    "%USERPROFILE%\miniconda3\envs\%ENV_NAME%\python.exe"
+    "%USERPROFILE%\.conda\envs\%ENV_NAME%\python.exe"
+    "C:\ProgramData\Anaconda3\envs\%ENV_NAME%\python.exe"
+    "C:\ProgramData\miniconda3\envs\%ENV_NAME%\python.exe"
+) do (
+    if exist %%~E (
+        set "ENV_PY=%%~E"
+        goto :env_found
+    )
+)
+
+echo [ERROR] Could not find python.exe in the created environment.
+pause
+exit /b 1
+
+:env_found
+echo [INFO] Using environment: %ENV_PY%
+
+REM Run Streamlit using env python (avoids activation PATH issues)
 echo [INFO] Starting TerraAgent (streamlit) ...
 echo     URL: http://localhost:8501
 echo.

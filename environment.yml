@@ -28,9 +28,12 @@ dependencies:
   # Pip dependencies (for packages not in conda)
   - pip
   - pip:
-    # AI/LLM (optional)
+    # AI/LLM Providers (optional)
     - openai>=1.0.0
     - anthropic>=0.18.0
+    - google-generativeai>=0.3.0
+    - mistralai>=0.1.0
+    # LangChain orchestration
     - langchain>=0.1.0
     - langchain-openai>=0.0.5
     - langchain-anthropic>=0.1.0
