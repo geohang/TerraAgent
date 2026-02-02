@@ -1,369 +1,308 @@
-# TerraAgent v3.0
+# TerraAgent v0.1
 
-**Intelligent Earth Science SaaS Platform - Agentic Edition**
+**Transform Scientific Python Code into Interactive Web Applications**
 
-Transform scientific Python code into interactive Streamlit web applications with a single click. TerraAgent uses an autonomous agent workflow to analyze, verify, and deploy scientific code as accessible web interfaces.
+TerraAgent automatically converts scientific Python packages into production-ready Streamlit web apps with rich visualizations, maps, and uncertainty quantification.
 
-![TerraAgent Demo](docs/images/terraagent_demo.png)
+---
 
-## 🚀 Quick Start
+## What Does TerraAgent Do?
 
-### Option 1: With Claude Code (Recommended)
+**Input:** A GitHub repository URL (e.g., `https://github.com/abpoll/unsafe`)
 
-Claude Code is an agentic AI coding assistant that can automatically integrate new scientific packages.
+**Output:** A complete Streamlit web application with:
+- 📍 Interactive maps
+- 📊 Key metrics and confidence intervals  
+- 📈 Distribution histograms
+- 📋 Formatted parameter tables
+- 🚀 One-click launcher scripts
+
+No frontend coding required from scientists.
+
+---
+
+## Quick Start
+
+### 1. Clone and Setup
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/yourusername/TerraAgent.git
 cd TerraAgent
-
-# 2. Create virtual environment
 python -m venv .venv
-.venv\Scripts\activate  # Windows
-source .venv/bin/activate  # macOS/Linux
 
-# 3. Install dependencies
+# Windows
+.venv\Scripts\activate
+
+# macOS/Linux  
+source .venv/bin/activate
+
 pip install -r requirements.txt
-
-# 4. Open in VS Code with Claude Code extension
-code .
-
-# 5. Ask Claude Code to integrate a package:
-# "Integrate the UNSAFE package from https://github.com/abpoll/unsafe for flood loss estimation"
 ```
 
-Claude Code will:
-- Read the package documentation
-- Create a wrapper module (`src/science_flood.py`)
-- Generate a Streamlit app with rich visualizations
-- Create launcher scripts for easy deployment
+### 2. Run TerraAgent
 
-### Option 2: Without Claude Code (Manual)
-
-Use the built-in StreamlitBuilder for rule-based app generation:
-
+**Option A: Use the Main Platform (Web Interface)**
 ```bash
-# 1. Clone and setup
-git clone https://github.com/yourusername/TerraAgent.git
-cd TerraAgent
-python -m venv .venv
-.venv\Scripts\activate  # Windows
-source .venv/bin/activate  # macOS/Linux
-pip install -r requirements.txt
-
-# 2. Run the main platform
 streamlit run streamlit_app.py
-
-# 3. Use the web interface to:
-#    - Enter a GitHub repository URL
-#    - Add natural language instructions
-#    - Generate an interactive app
 ```
+Then open http://localhost:8501 and enter a GitHub URL.
 
-### Option 3: Double-Click Launcher
+**Option B: Use the Test Notebooks**
+```bash
+jupyter notebook notebooks/03_Test_Flood_Module.ipynb
+```
+Run all cells to generate a flood analysis app.
 
-**Windows:**
+**Option C: Double-Click Launcher (Windows)**
 ```
 Double-click: launch_terraagent.bat
 ```
 
-**macOS/Linux:**
-```bash
-chmod +x launch_terraagent.sh
-./launch_terraagent.sh
-```
-
 ---
 
-## 📖 Step-by-Step Usage Guide
+## Two Ways to Use TerraAgent
 
-### Step 1: Install a Scientific Package
+### Method 1: With Claude Code (Recommended for New Packages)
 
-TerraAgent can wrap any scientific Python package. For example, to use the UNSAFE flood framework:
+Claude Code is an AI coding assistant that can automatically integrate new scientific packages.
 
-```bash
-pip install git+https://github.com/abpoll/unsafe
+1. Open the project in VS Code with Claude Code extension
+2. Ask Claude Code to integrate a package:
+
+```
+"Integrate the UNSAFE package from https://github.com/abpoll/unsafe 
+for flood loss estimation with uncertainty quantification"
 ```
 
-### Step 2: Create a Wrapper Module
+Claude Code will:
+- Install the package
+- Create a wrapper module (`src/science_flood.py`)
+- Generate a Streamlit app with visualizations
+- Create launcher scripts
 
-Create `src/science_flood.py` following the template pattern:
+### Method 2: Without Claude Code (Manual/Programmatic)
 
-```python
-"""
-Flood Loss Uncertainty Assessment Module
-Wrapper for the UNSAFE framework.
-"""
-
-import numpy as np
-from typing import Dict, Any
-
-# Check if package is installed
-try:
-    from unsafe.ddfs import est_hazus_loss
-    UNSAFE_AVAILABLE = True
-except ImportError:
-    UNSAFE_AVAILABLE = False
-
-def check_unsafe_installation() -> Dict[str, Any]:
-    """Check installation status."""
-    return {
-        "installed": UNSAFE_AVAILABLE,
-        "data_ready": True,
-        "install_command": "pip install git+https://github.com/abpoll/unsafe"
-    }
-
-def calculate_flood_loss(location_name: str, flood_depth: float, ...) -> Dict[str, Any]:
-    """Calculate flood loss with uncertainty."""
-    # Your implementation here
-    return {"mean_loss": 12345, "ci_lower": 5000, "ci_upper": 20000, ...}
-```
-
-### Step 3: Generate the Streamlit App
+Use the built-in `StreamlitBuilder` class:
 
 ```python
 from src.agent_builder import StreamlitBuilder
 import inspect
 from src import science_flood
 
+# Create builder
 builder = StreamlitBuilder()
-source_code = inspect.getsource(science_flood)
-ui_code = builder.generate_ui_code(source_code, "Create a flood loss estimation app")
 
-# Save the generated app
+# Get source code
+source_code = inspect.getsource(science_flood)
+
+# Generate Streamlit app
+ui_code = builder.generate_ui_code(source_code, "Create a flood analysis app")
+
+# Save
 with open("generated_flood_app.py", "w") as f:
     f.write(ui_code)
 ```
 
-### Step 4: Create Launcher Scripts
-
-**Windows (launch_flood.bat):**
-```batch
-@echo off
-echo Starting Flood Analysis Tool...
-if exist ".venv\Scripts\activate.bat" call .venv\Scripts\activate.bat
-streamlit run generated_flood_app.py
-pause
-```
-
-**macOS/Linux (launch_flood.sh):**
-```bash
-#!/bin/bash
-source .venv/bin/activate
-streamlit run generated_flood_app.py
-```
-
-### Step 5: Run Your App
-
+Then run:
 ```bash
 streamlit run generated_flood_app.py
-# Or double-click launch_flood.bat (Windows)
 ```
 
 ---
 
-## 🎨 Generated App Features
+## Built-in Examples
 
-TerraAgent generates production-quality Streamlit apps with:
+TerraAgent includes three pre-built science modules:
 
-| Feature | Description |
-|---------|-------------|
-| 📍 **Location Map** | Interactive map showing analysis location |
-| 📊 **Key Metrics** | Mean, CI, damage ratio with `st.metric()` |
-| 📈 **Histograms** | Loss/result distribution visualization |
-| 📋 **Details Table** | All parameters in formatted table |
-| ✅ **Status Indicator** | Shows package installation status |
-| 🎛️ **Smart Widgets** | Auto-generated from function signatures |
+| Module | Domain | External Package | Description |
+|--------|--------|------------------|-------------|
+| `science_flood.py` | 🌊 Flood | [UNSAFE](https://github.com/abpoll/unsafe) | Property flood loss with uncertainty |
+| `science_climate.py` | 🌡️ Climate | [xclim](https://xclim.readthedocs.io/) | Temperature projections |
+| `science_fire.py` | 🔥 Fire | [xclim](https://xclim.readthedocs.io/) | Fire Weather Index |
 
-### Example Generated UI
+### Test the Flood Module
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ 🌊 Flood Loss Estimator                                     │
-│ ✅ UNSAFE framework active | Mode: direct                   │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  🌊 Flood Risk Analysis              │  🗺️ Location Preview │
-│  ───────────────────────             │  ┌─────────────────┐ │
-│  Selected Location: Houston, TX      │  │   [Map of TX]   │ │
-│  Flood Depth: 1.5 meters             │  │       📍        │ │
-│  Property Value: $350,000            │  └─────────────────┘ │
-│                                      │  📍 Houston, TX      │
-│  Click Run Model to calculate...     │                      │
-│                                                             │
-├─────────────────────────────────────────────────────────────┤
-│ [After clicking Run Model]                                  │
-│                                                             │
-│  📊 Key Results                      │  🗺️ Location         │
-│  ┌────────┬────────┬────────┐        │  ┌─────────────────┐ │
-│  │Mean    │Damage  │95% CI  │        │  │   [Map zoom]    │ │
-│  │$45,230 │12.9%   │$23K-67K│        │  └─────────────────┘ │
-│  └────────┴────────┴────────┘        │                      │
-│                                      │                      │
-│  📈 Loss Distribution                │                      │
-│  ┌─────────────────────────┐         │                      │
-│  │    [Histogram chart]    │         │                      │
-│  └─────────────────────────┘         │                      │
-│                                                             │
-│  📋 Calculation Details                                     │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │ Parameter        │ Value                              │   │
-│  │ Location         │ Houston, TX                        │   │
-│  │ Flood Depth      │ 1.50 m                             │   │
-│  │ Property Value   │ $350,000                           │   │
-│  │ Using UNSAFE     │ ✅ Yes                             │   │
-│  └──────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+```python
+from src.science_flood import calculate_flood_loss, check_unsafe_installation
+
+# Check if UNSAFE is installed
+print(check_unsafe_installation())
+
+# Calculate flood loss
+result = calculate_flood_loss("Houston, TX", flood_depth=1.5, num_simulations=1000)
+print(f"Mean Loss: ${result['mean_loss']:,.0f}")
+print(f"95% CI: ${result['ci_lower']:,.0f} - ${result['ci_upper']:,.0f}")
 ```
 
 ---
 
-## 🤖 Using Claude Code for Integration
+## Generated App Features
 
-Claude Code can automate the entire integration process. Here are example prompts:
-
-### Integrate a New Package
+TerraAgent generates apps with rich visualizations:
 
 ```
-"Integrate the xclim package for climate projections. 
-Create a wrapper that calculates temperature anomalies 
-with uncertainty quantification."
+┌──────────────────────────────────────────────────────────────┐
+│ 🌊 Flood Loss Estimator                                      │
+│ ✅ UNSAFE framework active | Mode: direct                    │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  🌊 Flood Risk Analysis          │  🗺️ Location Preview     │
+│  ─────────────────────           │  ┌───────────────────┐   │
+│  Location: Houston, TX           │  │                   │   │
+│  Flood Depth: 1.5 m              │  │   [Interactive    │   │
+│  Property Value: $350,000        │  │      Map]         │   │
+│                                  │  │       📍          │   │
+│  Click Run Model to calculate    │  └───────────────────┘   │
+│                                                              │
+├──────────────────────────────────────────────────────────────┤
+│  [After clicking Run Model]                                  │
+│                                                              │
+│  📊 Key Results                                              │
+│  ┌──────────┬──────────┬──────────┐                          │
+│  │ Mean     │ Damage   │ 95% CI   │                          │
+│  │ $45,230  │ 12.9%    │ $23K-67K │                          │
+│  └──────────┴──────────┴──────────┘                          │
+│                                                              │
+│  📈 Loss Distribution                                        │
+│  [Histogram with mean line]                                  │
+│                                                              │
+│  📋 Calculation Details                                      │
+│  [Formatted table with all parameters]                       │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-### Generate Rich Visualizations
-
-```
-"Update the flood app to show the location map 
-before clicking Run Model, making the UI more attractive."
-```
-
-### Fix Issues
-
-```
-"The app shows 'Using simplified estimation' 
-even though UNSAFE is installed. Debug and fix."
-```
-
-Claude Code will:
-1. Analyze the codebase structure
-2. Read CLAUDE.md for integration patterns
-3. Create or modify wrapper modules
-4. Generate and test Streamlit code
-5. Update documentation
+**Key UI Features:**
+- Map preview shown **before** running (not just after)
+- Status indicator shows package availability
+- Metrics displayed with `st.metric()` 
+- Confidence intervals highlighted
+- Expandable JSON for full results
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 TerraAgent/
-├── streamlit_app.py          # Main entry point
-├── launch_terraagent.bat     # Windows launcher
-├── launch_terraagent.sh      # Unix launcher
-├── environment.yml           # Conda environment
-├── requirements.txt          # Pip dependencies
-├── CLAUDE.md                 # Instructions for Claude Code
+├── streamlit_app.py           # Main web interface
+├── launch_terraagent.bat      # Windows launcher
+├── launch_terraagent.sh       # Unix launcher
+├── requirements.txt           # Dependencies
+├── CLAUDE.md                  # Instructions for Claude Code
+│
 ├── src/
-│   ├── main_platform_v3.py   # V3 Agentic platform
-│   ├── agent_builder.py      # Core UI generation engine
-│   ├── utils.py              # Utility functions
-│   ├── agents/
-│   │   ├── inspector.py      # Repository analysis
-│   │   ├── engineer.py       # Environment setup
-│   │   ├── designer.py       # UI generation
-│   │   └── integrator.py     # Full workflow orchestration
-│   ├── science_climate.py    # Climate analysis module
-│   ├── science_fire.py       # Fire weather module
-│   └── science_flood.py      # Flood loss module (UNSAFE)
-├── data/
-│   └── unsafe/               # UNSAFE processed data
-├── docs/
-│   ├── WORKFLOW.md           # Detailed workflow guide
-│   └── TEMPLATES.md          # Template examples
+│   ├── agent_builder.py       # StreamlitBuilder class
+│   ├── science_flood.py       # Flood analysis (UNSAFE)
+│   ├── science_climate.py     # Climate projections (xclim)
+│   ├── science_fire.py        # Fire weather (xclim)
+│   └── agents/
+│       ├── inspector.py       # Repository analysis
+│       ├── engineer.py        # Environment setup
+│       ├── designer.py        # UI generation
+│       └── integrator.py      # Workflow orchestration
+│
 ├── notebooks/
-│   ├── 01_Verify_Science_Logic.ipynb
-│   ├── 02_Test_Agent_Builder.ipynb
 │   ├── 03_Test_Flood_Module.ipynb
 │   ├── 04_Test_Climate_Module.ipynb
 │   └── 05_Test_Fire_Module.ipynb
-└── generated_*.py            # Generated Streamlit apps
+│
+├── data/
+│   └── unsafe/                # Processed HAZUS data
+│
+└── generated_*.py             # Generated Streamlit apps
 ```
 
 ---
 
-## 🔧 Configuration
+## Creating Your Own Science Module
 
-### Environment Variables
-
-Copy `.env.example` to `.env`:
-
-```bash
-OPENAI_API_KEY=sk-...           # For LLM-enhanced generation
-ANTHROPIC_API_KEY=sk-ant-...    # For Claude models
-GOOGLE_API_KEY=AIza...          # For Gemini models
-```
-
-### Supported LLM Providers
-
-| Provider | Models | Notes |
-|----------|--------|-------|
-| **OpenAI** | gpt-4o, gpt-4o-mini | Best for code generation |
-| **Anthropic** | claude-3-5-sonnet | Excellent context understanding |
-| **Google** | gemini-1.5-pro | Good for long contexts |
-| **Ollama** | llama3.1, codellama | Free, local execution |
-| **None** | Rule-based | No API key needed |
-
-Without an API key, TerraAgent uses intelligent rule-based generation that maps Python types to Streamlit widgets automatically.
-
----
-
-## 🧪 Built-in Demos
-
-Test TerraAgent with these pre-built science modules:
-
-| Demo | Module | External Package |
-|------|--------|------------------|
-| 🌡️ Climate | `science_climate.py` | xclim |
-| 🔥 Fire | `science_fire.py` | xclim |
-| 🌊 Flood | `science_flood.py` | UNSAFE |
+Follow this pattern to wrap any scientific package:
 
 ```python
-# Test flood module
-from src.science_flood import calculate_flood_loss, check_unsafe_installation
+# src/science_yourpackage.py
 
-print(check_unsafe_installation())
-result = calculate_flood_loss("Houston, TX", 1.5, 1000)
-print(f"Mean Loss: ${result['mean_loss']:,.0f}")
+"""Wrapper for YourPackage"""
+
+from typing import Dict, Any
+import numpy as np
+
+# Check if package is installed
+try:
+    from yourpackage import main_function
+    PACKAGE_AVAILABLE = True
+except ImportError:
+    PACKAGE_AVAILABLE = False
+
+# Sample locations with coordinates (for map display)
+LOCATIONS = {
+    "Location A": {"lat": 29.76, "lon": -95.37, "param": 1.0},
+    "Location B": {"lat": 25.76, "lon": -80.19, "param": 2.0},
+}
+
+def get_locations():
+    return list(LOCATIONS.keys())
+
+def check_installation() -> Dict[str, Any]:
+    return {
+        "installed": PACKAGE_AVAILABLE,
+        "data_ready": True,
+        "install_command": "pip install yourpackage"
+    }
+
+def calculate_result(
+    location_name: str,
+    param1: float,
+    num_simulations: int = 1000
+) -> Dict[str, Any]:
+    """Main calculation function."""
+    loc = LOCATIONS[location_name]
+    
+    # Your calculation here...
+    results = np.random.normal(10000, 2000, num_simulations)
+    
+    return {
+        "location": location_name,
+        "lat": loc["lat"],           # Required for map
+        "lon": loc["lon"],           # Required for map
+        "mean_result": float(np.mean(results)),
+        "ci_lower": float(np.percentile(results, 2.5)),
+        "ci_upper": float(np.percentile(results, 97.5)),
+    }
+```
+
+Then generate the app:
+```python
+from src.agent_builder import StreamlitBuilder
+builder = StreamlitBuilder()
+code = builder.generate_ui_code(source_code, "Create analysis app")
 ```
 
 ---
 
-## 📚 Reference
+## Configuration (Optional)
 
-### Architecture
+For LLM-enhanced code generation, set environment variables:
 
-TerraAgent v3.0 uses four collaborative agents:
+```bash
+export OPENAI_API_KEY=sk-...        # OpenAI
+export ANTHROPIC_API_KEY=sk-ant-... # Anthropic Claude
+```
 
-1. **Inspector Agent** - Clones repos, extracts function signatures via AST
-2. **Engineer Agent** - Creates venvs, installs dependencies, runs tests
-3. **Designer Agent** - Generates Streamlit UI code with visualizations
-4. **Integrator Agent** - Orchestrates full workflow for new packages
-
-### External Packages Supported
-
-- [UNSAFE Framework](https://github.com/abpoll/unsafe) - Flood uncertainty quantification
-- [xclim](https://xclim.readthedocs.io/) - Climate and fire indices
-- [ClimateBench](https://github.com/duncanwp/ClimateBench) - Climate emulation
+Without API keys, TerraAgent uses intelligent rule-based generation that works well for most cases.
 
 ---
 
-## 📄 License
+## References
+
+- **UNSAFE Framework**: https://github.com/abpoll/unsafe
+- **xclim**: https://xclim.readthedocs.io/
+- **Streamlit**: https://docs.streamlit.io/
+
+---
+
+## License
 
 See [LICENSE](LICENSE) file.
-
-## 🤝 Contributing
-
-Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 

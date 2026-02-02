@@ -1,8 +1,8 @@
-# CLAUDE.md - TerraAgent Instructions for Claude Code
+# CLAUDE.md - TerraAgent v0.1 Instructions for Claude Code
 
 ## Overview
 
-TerraAgent is an agentic platform that transforms scientific Python packages into interactive Streamlit web applications. This document provides instructions for Claude Code agents to understand, iterate, and generate new scientific tool integrations.
+TerraAgent v0.1 is an agentic platform that transforms scientific Python packages into interactive Streamlit web applications. This document provides instructions for Claude Code agents to understand, iterate, and generate new scientific tool integrations.
 
 ## Quick Reference
 
