@@ -60,12 +60,28 @@ Double-click: launch_terraagent.bat
 
 ---
 
-## Two Ways to Use TerraAgent
+## Three Ways to Use TerraAgent
 
 ### Method 1: With Claude Code (Recommended for New Packages)
 
 Claude Code is an AI coding assistant that can automatically integrate new scientific packages.
 
+**Quick Setup:**
+```python
+from src.utils import setup_claude_code
+setup_claude_code()  # Checks installation and guides you through setup
+```
+
+**Or manually install:**
+```powershell
+# Windows PowerShell
+irm https://claude.ai/install.ps1 | iex
+
+# macOS/Linux
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+**Usage:**
 1. Open the project in VS Code with Claude Code extension
 2. Ask Claude Code to integrate a package:
 
@@ -80,9 +96,25 @@ Claude Code will:
 - Generate a Streamlit app with visualizations
 - Create launcher scripts
 
-### Method 2: Without Claude Code (Manual/Programmatic)
+### Method 2: With LLM APIs (Web Interface)
 
-Use the built-in `StreamlitBuilder` class:
+Use the built-in web interface with OpenAI, Anthropic, or other LLM APIs:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+1. Enter your API key (OpenAI, Anthropic, etc.) in the sidebar
+2. Paste a GitHub repository URL
+3. Click "Generate App"
+
+The web interface will use your chosen LLM to generate intelligent Streamlit apps.
+
+**Without an API key:** TerraAgent falls back to rule-based generation which still produces functional apps with rich visualizations for supported domains.
+
+### Method 3: Programmatic (Python API)
+
+Use the built-in `StreamlitBuilder` class directly:
 
 ```python
 from src.agent_builder import StreamlitBuilder
@@ -107,6 +139,7 @@ Then run:
 ```bash
 streamlit run generated_flood_app.py
 ```
+
 
 ---
 
