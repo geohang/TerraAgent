@@ -28,8 +28,15 @@ if "%CONDA_EXE%"=="" (
             goto :conda_found
         )
     )
-    echo [ERROR] Conda is not installed or not on PATH.
+    REM Fallback to local venv if conda is unavailable
+    set "ENV_PY="
+    if exist ".venv\Scripts\python.exe" set "ENV_PY=.venv\Scripts\python.exe"
+    if "%ENV_PY%"=="" if exist "venv\Scripts\python.exe" set "ENV_PY=venv\Scripts\python.exe"
+    if not "%ENV_PY%"=="" goto :env_found
+
+    echo [ERROR] Conda is not installed or not on PATH, and no local venv was found.
     echo Install Miniconda: https://docs.conda.io/en/latest/miniconda.html
+    echo Or create a venv: python -m venv .venv ^&^& .venv\Scripts\python -m pip install -r requirements.txt
     pause
     exit /b 1
 )

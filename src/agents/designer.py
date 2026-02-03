@@ -37,10 +37,10 @@ Code Structure Rules:
 
 1. Imports: Import streamlit as st, matplotlib.pyplot as plt, and necessary scientific libraries.
 
-2. sys.path: MUST add the repo path to sys.path at the top:
+2. sys.path: MUST add the repo path to sys.path at the top (use raw string on Windows):
    ```python
    import sys
-   sys.path.insert(0, "{repo_path}")
+   sys.path.insert(0, r"{repo_path}")
    ```
 
 3. State Management: Use st.session_state to prevent re-running the model on every interaction.
@@ -267,11 +267,25 @@ Generate a complete, working Streamlit application following all the rules in th
             code = re.sub(r'^```python\n?', '', code)
             code = re.sub(r'\n?```$', '', code)
 
+            # Sanitize Windows paths to avoid unicodeescape errors in preview
+            code = self._sanitize_windows_paths(code)
+            
             return code.strip()
-
+            
         except Exception as e:
             self.log(f"LLM generation failed: {e}, falling back to rule-based")
             return self._generate_rule_based(function_info, repo_path, user_instruction)
+
+    def _sanitize_windows_paths(self, code: str) -> str:
+        """Ensure sys.path insertions use raw strings on Windows paths."""
+        pattern = r'(sys\.path\.insert\(0,\s*)(["\'])([A-Za-z]:\\[^"\']+)(\2)'
+
+        def _repl(match: re.Match) -> str:
+            prefix = match.group(1)
+            path = match.group(3)
+            return f'{prefix}r"{path}"'
+
+        return re.sub(pattern, _repl, code)
 
     def _call_llm(self, system_prompt: str, user_prompt: str) -> str:
         """Call the LLM based on provider/client type."""
