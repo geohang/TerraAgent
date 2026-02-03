@@ -1,0 +1,63 @@
+{
+  "name": "terraagent",
+  "version": "0.1.0",
+  "description": "Transform scientific Python packages into interactive Streamlit web applications with rich visualizations, maps, and uncertainty quantification.",
+  "author": "TerraAgent Team",
+  "repository": "https://github.com/geohang/TerraAgent",
+  "keywords": [
+    "scientific-computing",
+    "streamlit",
+    "visualization",
+    "uncertainty-quantification",
+    "climate",
+    "flood",
+    "fire",
+    "geospatial",
+    "monte-carlo"
+  ],
+  "category": "scientific",
+  "commands": [
+    {
+      "name": "integrate-package",
+      "description": "Integrate a scientific Python package from GitHub into TerraAgent",
+      "usage": "Integrate the {package_name} package from {github_url} for {domain} analysis"
+    },
+    {
+      "name": "generate-app",
+      "description": "Generate a Streamlit app from a science module",
+      "usage": "Generate a Streamlit app for src/science_{domain}.py"
+    },
+    {
+      "name": "create-module",
+      "description": "Create a new science wrapper module following TerraAgent patterns",
+      "usage": "Create a science module for {domain} analysis using {package_name}"
+    }
+  ],
+  "dependencies": {
+    "python": ">=3.10",
+    "required": [
+      "streamlit>=1.20.0",
+      "numpy",
+      "pandas",
+      "matplotlib"
+    ],
+    "optional": [
+      "xclim",
+      "unsafe",
+      "anthropic",
+      "openai",
+      "google-generativeai",
+      "mistralai"
+    ]
+  },
+  "files": {
+    "main_instructions": "CLAUDE.md",
+    "skill_readme": "skill/SKILL.md",
+    "agent_builder": "src/agent_builder.py",
+    "examples": [
+      "src/science_flood.py",
+      "src/science_climate.py",
+      "src/science_fire.py"
+    ]
+  }
+}

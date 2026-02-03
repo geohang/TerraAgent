@@ -4,6 +4,8 @@
 
 TerraAgent v0.1 is an agentic platform that transforms scientific Python packages into interactive Streamlit web applications. This document provides instructions for Claude Code agents to understand, iterate, and generate new scientific tool integrations.
 
+**This project is also available as a Claude Code skill.** See `skill/SKILL.md` for quick reference or `skill/skill.json` for metadata.
+
 ## Quick Reference
 
 ```
@@ -539,9 +541,56 @@ print(f"Generated {len(code)} characters")
 
 ---
 
+## TerraAgent as a Claude Code Skill
+
+TerraAgent can be used as a skill by other Claude Code instances. The skill package is located in the `skill/` folder.
+
+### Skill Structure
+
+```
+skill/
+├── SKILL.md          # Quick reference documentation
+├── skill.json        # Skill metadata and commands
+└── examples/
+    └── prompts.md    # Example usage prompts
+```
+
+### Available Skill Commands
+
+1. **integrate-package**: Integrate a scientific Python package from GitHub
+   ```
+   Integrate the {package_name} package from {github_url} for {domain} analysis
+   ```
+
+2. **generate-app**: Generate a Streamlit app from a science module
+   ```
+   Generate a Streamlit app for src/science_{domain}.py
+   ```
+
+3. **create-module**: Create a new science wrapper module
+   ```
+   Create a science module for {domain} analysis using {package_name}
+   ```
+
+### Using TerraAgent in Other Projects
+
+Other Claude Code instances can reference TerraAgent:
+
+```
+Use TerraAgent from https://github.com/geohang/TerraAgent to integrate the xclim package for climate projections
+```
+
+The skill metadata in `skill/skill.json` provides:
+- Package name and version
+- Available commands and their usage
+- Required and optional dependencies
+- Key file locations
+
+---
+
 ## References
 
 - **UNSAFE Framework**: https://github.com/abpoll/unsafe
 - **xclim**: https://xclim.readthedocs.io/
 - **Streamlit Docs**: https://docs.streamlit.io/
-- **TerraAgent Templates**: docs/TEMPLATES.md
+- **Skill Documentation**: skill/SKILL.md

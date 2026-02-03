@@ -223,6 +223,12 @@ TerraAgent/
 ├── requirements.txt           # Dependencies
 ├── CLAUDE.md                  # Instructions for Claude Code
 │
+├── skill/                     # Claude Code skill package
+│   ├── SKILL.md              # Skill documentation
+│   ├── skill.json            # Skill metadata
+│   └── examples/
+│       └── prompts.md        # Example usage prompts
+│
 ├── src/
 │   ├── agent_builder.py       # StreamlitBuilder class
 │   ├── science_flood.py       # Flood analysis (UNSAFE)
@@ -322,6 +328,56 @@ export ANTHROPIC_API_KEY=sk-ant-... # Anthropic Claude
 ```
 
 Without API keys, TerraAgent uses intelligent rule-based generation that works well for most cases.
+
+---
+
+## Using TerraAgent as a Claude Code Skill
+
+TerraAgent can be used as a skill by other Claude Code instances to automatically integrate scientific packages.
+
+### For Other Claude Code Users
+
+Point Claude Code to this repository and it will understand the TerraAgent patterns:
+
+```
+Use TerraAgent from https://github.com/geohang/TerraAgent to integrate the {package_name} package for {domain} analysis
+```
+
+### Skill Structure
+
+```
+skill/
+├── SKILL.md          # Skill documentation
+├── skill.json        # Skill metadata
+└── examples/
+    └── prompts.md    # Example usage prompts
+```
+
+### Key Files for Skill Usage
+
+| File | Purpose |
+|------|---------|
+| `CLAUDE.md` | Complete instructions for Claude Code agents |
+| `skill/SKILL.md` | Quick reference for skill usage |
+| `skill/skill.json` | Skill metadata and commands |
+| `src/agent_builder.py` | StreamlitBuilder for app generation |
+
+### Example Skill Commands
+
+**Integrate a new package:**
+```
+Integrate the UNSAFE package from https://github.com/abpoll/unsafe for flood loss estimation with uncertainty quantification
+```
+
+**Generate an app:**
+```
+Generate a Streamlit app for src/science_flood.py with map visualization
+```
+
+**Create a new module:**
+```
+Create a science module for earthquake analysis following TerraAgent patterns
+```
 
 ---
 
