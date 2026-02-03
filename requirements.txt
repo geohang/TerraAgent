@@ -1,4 +1,4 @@
-# Core
+# Core - Required for TerraAgent
 streamlit>=1.30.0
 numpy>=1.24.0
 pandas>=2.0.0
@@ -6,39 +6,6 @@ scipy>=1.11.0
 matplotlib>=3.7.0
 seaborn>=0.12.0
 
-# Scientific
-xarray>=2023.12.0
-geopandas>=0.14.0
-
-# AI/LLM Providers (optional - for enhanced generation)
-# OpenAI
-openai>=1.0.0
-
-# Anthropic
-anthropic>=0.18.0
-
-# Google Gemini
-google-generativeai>=0.3.0
-
-# Mistral
-mistralai>=0.1.0
-
-# LangChain (orchestration)
-langchain>=0.1.0
-langchain-openai>=0.0.5
-langchain-anthropic>=0.1.0
-
-# HTTP requests
-requests>=2.31.0
-
-# Git operations (for v3.0 agentic mode)
-gitpython>=3.1.0
-
-# UNSAFE Framework (optional - for enhanced flood loss estimation)
-# Install with: pip install git+https://github.com/abpoll/unsafe
-# Note: Requires geopandas, rasterio, pyyaml as dependencies
-# The flood module will use simplified estimation if UNSAFE is not installed
-
-# Development
-jupyter>=1.0.0
-notebook>=7.0.0
+# Optional AI/LLM (comment out if not needed)
+# openai>=1.0.0
+# langchain>=0.1.0
