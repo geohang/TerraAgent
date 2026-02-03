@@ -186,7 +186,7 @@ def get_flood_locations() -> List[str]:
 def check_unsafe_installation() -> Dict[str, Any]:
     """
     Check if UNSAFE is properly installed and return status.
-    
+
     Returns:
         Dict with installation status and instructions.
     """

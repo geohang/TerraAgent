@@ -6,6 +6,9 @@ scipy>=1.11.0
 matplotlib>=3.7.0
 seaborn>=0.12.0
 
+# UNSAFE Framework for flood loss estimation
+unsafe @ git+https://github.com/abpoll/unsafe.git
+
 # Optional AI/LLM (comment out if not needed)
 # openai>=1.0.0
 # langchain>=0.1.0
