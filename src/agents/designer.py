@@ -56,8 +56,11 @@ Code Structure Rules:
    - If return type is plt.Figure, use st.pyplot(figure)
    - If return type is pd.DataFrame, use st.dataframe()
    - Display relevant statistics and metadata
+   - If the result contains lat/lon, show st.map() plus st.metric() for key values
 
-7. Styling: Follow the user's styling instructions for colors, layout, etc.
+7. UX: If the app is geospatial, show a preview section (summary + map) BEFORE the Run button.
+
+8. Styling: Follow the user's styling instructions for colors, layout, etc.
 
 Output ONLY valid Python code. No explanations or markdown.'''
 
@@ -255,41 +258,130 @@ Working Code Snippet (verified to run):
 Generate a complete, working Streamlit application following all the rules in the system prompt.
 """
         
+        system_prompt = self.SYSTEM_PROMPT.format(repo_path=repo_path)
+
         try:
-            # Try OpenAI-style client
-            if hasattr(self.llm_client, 'chat'):
-                response = self.llm_client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": self.SYSTEM_PROMPT.format(repo_path=repo_path)},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.3
-                )
-                code = response.choices[0].message.content
-                
-            # Try Anthropic-style client
-            elif hasattr(self.llm_client, 'messages'):
-                response = self.llm_client.messages.create(
-                    model="claude-3-5-sonnet-20241022",
-                    max_tokens=4096,
-                    system=self.SYSTEM_PROMPT.format(repo_path=repo_path),
-                    messages=[{"role": "user", "content": prompt}]
-                )
-                code = response.content[0].text
-            else:
-                self.log("Unknown LLM client type, falling back to rule-based")
-                return self._generate_rule_based(function_info, repo_path, user_instruction)
-            
+            code = self._call_llm(system_prompt, prompt)
+
             # Clean up code (remove markdown fences if present)
             code = re.sub(r'^```python\n?', '', code)
             code = re.sub(r'\n?```$', '', code)
-            
+
             return code.strip()
-            
+
         except Exception as e:
             self.log(f"LLM generation failed: {e}, falling back to rule-based")
             return self._generate_rule_based(function_info, repo_path, user_instruction)
+
+    def _call_llm(self, system_prompt: str, user_prompt: str) -> str:
+        """Call the LLM based on provider/client type."""
+        # Dict-based client (new multi-provider format)
+        if isinstance(self.llm_client, dict):
+            client = self.llm_client.get("client")
+            model = self.llm_client.get("model")
+            provider = self.llm_client.get("provider")
+
+            if provider == "claude_code":
+                return self._call_claude_code(system_prompt, user_prompt, model)
+
+            if provider in {"openai", "openrouter", "ollama"}:
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    temperature=0.3
+                )
+                return response.choices[0].message.content
+
+            if provider == "anthropic":
+                response = client.messages.create(
+                    model=model,
+                    max_tokens=4096,
+                    system=system_prompt,
+                    messages=[{"role": "user", "content": user_prompt}]
+                )
+                return response.content[0].text
+
+            if provider == "google":
+                model_instance = client.GenerativeModel(model)
+                full_prompt = f"{system_prompt}\n\n{user_prompt}"
+                response = model_instance.generate_content(full_prompt)
+                return response.text
+
+            if provider == "mistral":
+                response = client.chat.complete(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ]
+                )
+                return response.choices[0].message.content
+
+            raise ValueError(f"Unsupported LLM provider: {provider}")
+
+        # Legacy: OpenAI-style client
+        if hasattr(self.llm_client, 'chat'):
+            response = self.llm_client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.3
+            )
+            return response.choices[0].message.content
+
+        # Legacy: Anthropic-style client
+        if hasattr(self.llm_client, 'messages'):
+            response = self.llm_client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=4096,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}]
+            )
+            return response.content[0].text
+
+        raise ValueError("Unsupported LLM client type")
+
+    def _call_claude_code(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        model: str = "sonnet"
+    ) -> str:
+        """Call Claude Code CLI for generation."""
+        import subprocess
+
+        full_prompt = f"""{system_prompt}
+
+---
+
+{user_prompt}"""
+
+        cmd = [
+            "claude",
+            "-p",
+            "--model", model,
+            "--output-format", "text",
+            "--dangerously-skip-permissions",
+            full_prompt
+        ]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=180
+        )
+
+        if result.returncode != 0:
+            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+            raise RuntimeError(f"Claude Code CLI error: {error_msg}")
+
+        return result.stdout.strip()
     
     def design(
         self,

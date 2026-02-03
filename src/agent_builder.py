@@ -447,7 +447,6 @@ Generate the complete Streamlit app code now:"""
         """Generate Streamlit code using rule-based mapping."""
         func_name = func_info['name']
         title = func_name.replace('_', ' ').title()
-        instruction_literal = json.dumps(user_instruction)
         primary_color = self._extract_primary_color(user_instruction)
 
         # Build sidebar inputs (no indentation - widgets are at top level in generated code)
@@ -502,9 +501,9 @@ Generate the complete Streamlit app code now:"""
 """
 
         # Generate the complete code
-        # Safely escape user instruction for embedding
-        safe_instruction = user_instruction.replace('"', '\\"')
-        safe_doc_summary = doc_summary.replace('"', '\\"')
+        # Safely embed user instruction and summary (avoid Windows path unicode escapes)
+        safe_instruction_literal = json.dumps(user_instruction)
+        safe_doc_summary_literal = json.dumps(doc_summary)
         
         # CSS block handling
         css_markdown = ""
@@ -535,8 +534,10 @@ st.set_page_config(page_title="{title}", layout="wide")
 
 # Title and description
 st.title("{title}")
-st.markdown("""{safe_doc_summary}""")
-st.markdown("**User Instruction:** {safe_instruction}"){css_markdown}
+doc_text = {safe_doc_summary_literal} or "Interactive interface for {func_name.replace('_', ' ').title()}"
+instruction_text = {safe_instruction_literal}
+st.markdown(doc_text)
+st.markdown(f"**User Instruction:** {instruction_text}"){css_markdown}
 
 # Initialize session state
 if 'result' not in st.session_state:
